@@ -11,6 +11,7 @@ export const initialState = {
   timestamps: {},
   layerTimeUrls: {},
   layerLegends: {},
+  layerWmsStyles: {},
   params: {},
   geojsonData: {},
 };
@@ -95,6 +96,11 @@ const setLayerLegend = (state, { payload }) => ({
   layerLegends: { ...state.layerLegends, ...payload },
 });
 
+const setLayerWmsStyles = (state, { payload }) => ({
+  ...state,
+  layerWmsStyles: { ...state.layerWmsStyles, ...payload },
+});
+
 const setDatasetParams = (state, { payload }) => {
   const { dataset, params } = payload;
 
@@ -134,6 +140,7 @@ export default {
   [actions.setTimestamps]: setTimestamps,
   [actions.setLayerTimeUrls]: setLayerTimeUrls,
   [actions.setLayerLegend]: setLayerLegend,
+  [actions.setLayerWmsStyles]: setLayerWmsStyles,
   [actions.setDatasetParams]: setDatasetParams,
   [actions.setGeojsonData]: setGeojsonData,
   [actions.setLayerUpdatingStatus]: setLayerUpdatingStatus,

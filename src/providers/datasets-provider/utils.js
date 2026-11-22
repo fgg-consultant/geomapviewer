@@ -171,11 +171,9 @@ const tileLayerUpdateProvider = (layer) => {
 
 export const createUpdateProviders = (activeLayers) => {
   const providers = activeLayers.reduce((all, layer) => {
-    const { layerType, multiTemporal, legendConfig } = layer;
+    const { layerType, multiTemporal } = layer;
 
     let provider;
-
-    const legendFromCapabilities = legendConfig?.type === "wms_capabilities";
 
     if (multiTemporal && layerType) {
       switch (layerType) {
@@ -202,7 +200,8 @@ export const createUpdateProviders = (activeLayers) => {
       provider = rasterCogUpdateProvider(layer);
     } else if (!multiTemporal && layerType === "openmeteo") {
       provider = openMeteoUpdateProvider(layer);
-    } else if (!multiTemporal && layerType === "wms" && legendFromCapabilities) {
+    } else if (!multiTemporal && layerType === "wms") {
+      // reads the legend and the styles from the capabilities
       provider = wmsUpdateProvider(layer);
     }
 

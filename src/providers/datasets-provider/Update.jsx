@@ -7,6 +7,7 @@ import * as ownActions from "./actions";
 import { getDatasetProps } from "./selectors";
 import { setMapSettings } from "@/components/map/actions";
 import { parseISO } from "date-fns";
+import { getWmsLayerNames, getWmsServiceUrl } from "@/utils/wms-url";
 
 const actions = {
   ...ownActions,
@@ -37,20 +38,37 @@ class LayerUpdate extends PureComponent {
       layerName,
       getCapabilitiesLayerName,
       styles,
+      layerConfig,
     } = layer;
 
     const styleName = legendFromCapabilities && Array.isArray(styles)
       ? styles.join(',')
       : null;
 
+    // the geomanager gives the GetCapabilities URL only for the layers reading
+    // their time from it: the others use the URL of the GetMap service
+    const capabilitiesUrl =
+      getCapabilitiesUrl || getWmsServiceUrl(layerConfig?.source?.tiles?.[0]);
+
     // loaded on demand: ogc-client is only needed by WMS layers, in the browser
     const { getWmsLayerInfo } = await import("@/utils/wms");
 
     return getWmsLayerInfo(
-      getCapabilitiesUrl,
+      capabilitiesUrl,
       getCapabilitiesLayerName || layerName,
       styleName
     );
+  };
+
+  // styles to pick from in the legend. A single style is given to all the
+  // layers of a GetMap request, so only the requests of one layer can choose.
+  setWmsStyles = (info) => {
+    const { layer, setLayerWmsStyles } = this.props;
+    const tilesUrl = layer.layerConfig?.source?.tiles?.[0];
+
+    if (info.styles && getWmsLayerNames(tilesUrl).length === 1) {
+      setLayerWmsStyles({ [layer.id]: info.styles });
+    }
   };
 
   processTimestamps = (timestamps) => {
@@ -181,8 +199,14 @@ class LayerUpdate extends PureComponent {
           setLayerLegend({ [layerId]: info.legendUrl });
         }
 
+        this.setWmsStyles(info);
+
         if (!getTimestamps && multiTemporal) {
-          this.processTimestamps(info.timestamps || []);
+          // the time is read from the capabilities only when the geomanager
+          // asks for it, by giving their URL
+          this.processTimestamps(
+            (layer.getCapabilitiesUrl && info.timestamps) || []
+          );
         }
 
         setLayerUpdatingStatus({ [layerId]: false });
@@ -218,6 +242,14 @@ class LayerUpdate extends PureComponent {
           setLayerUpdatingStatus({ [layerId]: false });
           setLayerLoadingStatus({ [layerId]: false });
         });
+    }
+
+    // the other WMS layers read only their styles from the capabilities, in
+    // the background
+    if (layerType === "wms" && !needsWmsCapabilities && isInitial) {
+      this.getWMSLayerInfo()
+        .then(this.setWmsStyles)
+        .catch(() => {});
     }
 
     // update data
