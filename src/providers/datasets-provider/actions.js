@@ -16,6 +16,7 @@ export const setGeojsonData = createAction("setGeojsonData");
 export const setTimestamps = createAction("setTimestamps");
 export const setLayerTimeUrls = createAction("setLayerTimeUrls");
 export const setLayerLegend = createAction("setLayerLegend");
+export const setLayerWmsStyles = createAction("setLayerWmsStyles");
 export const setDatasetParams = createAction("setDatasetParams");
 
 export const fetchDatasets = createThunkAction(

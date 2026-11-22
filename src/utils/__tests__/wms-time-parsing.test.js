@@ -17,6 +17,7 @@ process.env.TZ = "Europe/Paris";
 const {
   extractTimestamps,
   extractLegendUrl,
+  extractStyles,
   getWmsLayerInfo,
 } = require("../wms");
 
@@ -198,6 +199,52 @@ describe("extractLegendUrl", () => {
 });
 
 // ===========================================================================
+//  extractStyles
+// ===========================================================================
+
+describe("extractStyles", () => {
+  test("lists the styles, with a GetLegendGraphic request when no legend is given", () => {
+    const layer = {
+      name: "test",
+      styles: [
+        { name: "default", title: "Default", legendUrl: "https://example.com/default.png" },
+        { name: "anomaly" },
+        { title: "No name" },
+      ],
+    };
+
+    expect(extractStyles(layer, `${WMS_URL}?SERVICE=WMS&REQUEST=GetCapabilities`)).toEqual([
+      { name: "default", title: "Default", legendUrl: "https://example.com/default.png" },
+      {
+        name: "anomaly",
+        title: "anomaly",
+        legendUrl:
+          "https://example.com/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=test&STYLE=anomaly&FORMAT=image%2Fpng",
+      },
+    ]);
+  });
+
+  test("lists a style given twice once", () => {
+    const layer = {
+      name: "test",
+      styles: [
+        { name: "default", legendUrl: "https://example.com/a.png" },
+        { name: "default", legendUrl: "https://example.com/b.png" },
+      ],
+    };
+
+    expect(extractStyles(layer, WMS_URL)).toEqual([
+      { name: "default", title: "default", legendUrl: "https://example.com/a.png" },
+    ]);
+  });
+
+  test("returns an empty list without styles", () => {
+    expect(extractStyles({}, WMS_URL)).toEqual([]);
+    expect(extractStyles(null, WMS_URL)).toEqual([]);
+  });
+});
+
+// ===========================================================================
 //  getWmsLayerInfo — integration with ogc-client
 // ===========================================================================
 
@@ -220,8 +267,15 @@ describe("getWmsLayerInfo", () => {
     );
   });
 
-  test("reads timestamps and legend of a nested layer", async () => {
+  test("reads timestamps, legend and styles of a nested layer", async () => {
     expect(await getWmsLayerInfo(WMS_URL, "test", "default")).toEqual({
+      styles: [
+        {
+          name: "default",
+          title: "Default",
+          legendUrl: "https://example.com/legend.png",
+        },
+      ],
       timestamps: [
         "2024-01-01T00:00:00.000Z",
         "2024-01-02T00:00:00.000Z",
