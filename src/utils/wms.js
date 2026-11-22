@@ -1,4 +1,7 @@
 import { WmsEndpoint, expandTimeInterval } from "@camptocamp/ogc-client";
+import uniqBy from "lodash/uniqBy";
+
+import { getLegendGraphicUrl } from "./wms-url";
 
 // only the latest timestamps are kept, to avoid the browser hanging on large time
 // ranges (same limit as the ogc-client default, which keeps the earliest ones)
@@ -79,8 +82,27 @@ export function extractLegendUrl(layer, styleName) {
 }
 
 /**
- * Read the timestamps and the legend URL of a layer from the WMS capabilities.
- * ogc-client fetches and parses the capabilities in a worker, and caches them.
+ * List the styles of a layer read by ogc-client, with the URL of their legend:
+ * the one of the capabilities, or else a GetLegendGraphic request.
+ */
+export function extractStyles(layer, wmsUrl) {
+  // some services list a style twice, e.g. inherited from a parent layer
+  const styles = uniqBy(
+    (layer?.styles || []).filter((style) => style.name),
+    "name"
+  );
+
+  return styles.map(({ name, title, legendUrl }) => ({
+      name,
+      title: title || name,
+      legendUrl: legendUrl || getLegendGraphicUrl(wmsUrl, layer.name, name),
+    }));
+}
+
+/**
+ * Read the timestamps, the legend URL and the styles of a layer from the WMS
+ * capabilities. ogc-client fetches and parses the capabilities in a worker,
+ * and caches them.
  */
 export async function getWmsLayerInfo(wmsUrl, layerName, styleName) {
   try {
@@ -88,6 +110,11 @@ export async function getWmsLayerInfo(wmsUrl, layerName, styleName) {
     const layer = endpoint.getLayerByName(layerName);
 
     const result = {};
+
+    const styles = extractStyles(layer, wmsUrl);
+    if (styles.length) {
+      result.styles = styles;
+    }
 
     const timestamps = extractTimestamps(layer);
     if (timestamps) {
