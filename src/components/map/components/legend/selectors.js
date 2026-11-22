@@ -18,6 +18,8 @@ const selectLayerTimestamps = (state) =>
   state.datasets && state.datasets.timestamps;
 const selectLayerLegends = (state) =>
   state.datasets && state.datasets.layerLegends;
+const selectLayerWmsStyles = (state) =>
+  state.datasets && state.datasets.layerWmsStyles;
 const getLocation = (state) => state.location && state.location.payload;
 
 export const getLoading = createSelector(
@@ -25,9 +27,35 @@ export const getLoading = createSelector(
   (datasetsLoading, countryDataLoading) => datasetsLoading || countryDataLoading
 );
 
+const findStyle = (styles, name) =>
+  name && styles.find((s) => s.name.toLowerCase() === name.toLowerCase());
+
+// Styles of a WMS layer to pick from, when its capabilities list several. The
+// legend configured in the geomanager is the one of its style: another style
+// shows its own legend.
+const getWmsStyleProps = (layer, wmsStyles) => {
+  if (!wmsStyles || wmsStyles.length < 2) return {};
+
+  // without a style in the GetMap request, the server uses its default one,
+  // listed first
+  const configuredStyle = findStyle(wmsStyles, layer.styles?.[0]) || wmsStyles[0];
+  const selectedStyle =
+    layer.wmsStyle && wmsStyles.find((s) => s.name === layer.wmsStyle);
+  const activeStyle = selectedStyle || configuredStyle;
+
+  return {
+    wmsStyles,
+    activeWmsStyle: activeStyle.name,
+    ...(activeStyle !== configuredStyle &&
+      activeStyle.legendUrl && {
+        legendConfig: { type: "image", imageUrl: activeStyle.legendUrl },
+      }),
+  };
+};
+
 const getLegendLayerGroups = createSelector(
-  [getLayerGroups, selectLayerTimestamps, selectLayerLegends],
-  (groups, layerTimestamps, layerLegends) => {
+  [getLayerGroups, selectLayerTimestamps, selectLayerLegends, selectLayerWmsStyles],
+  (groups, layerTimestamps, layerLegends, layerWmsStyles) => {
     if (!groups) return null;
 
     const lGroups = groups.filter((g) => !g.isBoundary && !g.isRecentImagery);
@@ -91,7 +119,10 @@ const getLegendLayerGroups = createSelector(
             }
           }
 
-          return { ...l };
+          return {
+            ...l,
+            ...getWmsStyleProps(l, layerWmsStyles && layerWmsStyles[l.id]),
+          };
         });
 
       return { ...group, layers: layers };

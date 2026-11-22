@@ -187,6 +187,22 @@ class Legend extends PureComponent {
     });
   };
 
+  // keep the style picked for each layer in the map state, shared by the URL
+  onChangeWmsStyle = (currentLayer, styleName) => {
+    const { setMapSettings, activeDatasets } = this.props;
+
+    setMapSettings({
+      datasets: activeDatasets.map((l) => {
+        if (!l.layers.includes(currentLayer.id)) return l;
+
+        return {
+          ...l,
+          wmsStyles: { ...l.wmsStyles, [currentLayer.id]: styleName },
+        };
+      }),
+    });
+  };
+
   onChangeFilterParam = (currentLayer, newParam) => {
     const { setMapSettings, activeDatasets } = this.props;
 
@@ -246,6 +262,7 @@ class Legend extends PureComponent {
       onRemoveLayer: this.onRemoveLayer,
       onChangeInfo: this.onChangeInfo,
       onChangeParam: this.onChangeParam,
+      onChangeWmsStyle: this.onChangeWmsStyle,
       onChangeFilterParam: this.onChangeFilterParam,
       setConfirmed: this.setConfirmed,
       onChangeMapSide: this.onChangeMapSide,

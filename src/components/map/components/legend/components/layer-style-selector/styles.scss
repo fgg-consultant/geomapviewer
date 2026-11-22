@@ -1,0 +1,106 @@
+@import '@/styles/settings';
+
+.c-layer-style-selector {
+  margin: 10px 0;
+
+  // same title as the analysis widgets, toggling the list
+  .title {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    font-size: rem(13px);
+    font-weight: 500;
+    line-height: 1.54;
+    color: $slate;
+    text-align: left;
+    text-transform: uppercase;
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    .style-icon {
+      flex-shrink: 0;
+      margin-right: 4px;
+      fill: $primary-color;
+    }
+
+    .active-style {
+      min-width: 0;
+      margin: 0 rem(8px);
+      overflow: hidden;
+      font-weight: $font-weight-regular;
+      color: $slate-light;
+      text-transform: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    // same caret as the analysis panel and the layer select menu
+    .icon-arrow {
+      flex-shrink: 0;
+      width: rem(10px);
+      min-width: rem(10px);
+      margin-left: auto;
+      fill: $slate;
+
+      &.-open {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .styles {
+    display: flex;
+    flex-flow: column;
+    gap: 6px;
+    margin-top: rem(10px);
+  }
+
+  .style {
+    display: flex;
+    flex-flow: column;
+    gap: 4px;
+    width: 100%;
+    padding: 5px 6px 6px;
+    text-align: left;
+    background: $white;
+    border: 1px solid $border;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $warm-grey;
+    }
+
+    &.-active {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 1px $primary-color;
+      cursor: default;
+
+      .name {
+        color: $primary-color;
+        font-weight: $font-weight-bold;
+      }
+    }
+  }
+
+  .name {
+    font-size: $font-size-xs;
+    line-height: 1.3;
+    color: $slate;
+  }
+
+  // the legend over the whole width: a horizontal legend shows entirely, a
+  // vertical one shows its top
+  .thumbnail {
+    display: block;
+    width: 100%;
+    height: 34px;
+    background-color: $grey-light;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: left top;
+    border-radius: 2px;
+  }
+}

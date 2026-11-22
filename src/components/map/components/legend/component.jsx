@@ -26,6 +26,7 @@ import LayerSelectorMenu from "./components/layer-selector-menu";
 import LayerStatement from "./components/layer-statement";
 import LayerAnalysisStatement from "./components/layer-analysis-statement";
 import LayerMoreInfo from "./components/layer-more-info";
+import LayerStyleSelector from "./components/layer-style-selector";
 import LayerCapabilities from "@/components/layer-capabilities/component";
 
 import SubNavMenu from "@/components/subnav-menu";
@@ -47,6 +48,7 @@ const MapLegendContent = ({
   onChangeParam,
   onChangeFilterParam,
   onChangeLayerSetting,
+  onChangeWmsStyle,
   onChangeInfo,
   loading,
   className,
@@ -109,6 +111,8 @@ const MapLegendContent = ({
           disclaimer,
           layerFilterParams,
           layerFilterParamsConfig,
+          wmsStyles,
+          activeWmsStyle,
         } = activeLayer || {};
 
         const isUpdating =
@@ -198,6 +202,16 @@ const MapLegendContent = ({
                 layers={lg.layers}
                 onSelectLayer={onSelectLayer}
                 onInfoClick={onChangeInfo}
+              />
+            )}
+
+            {activeLayer && wmsStyles && (
+              <LayerStyleSelector
+                styles={wmsStyles}
+                activeStyle={activeWmsStyle}
+                onChange={(styleName) =>
+                  onChangeWmsStyle(activeLayer, styleName)
+                }
               />
             )}
 
@@ -458,6 +472,7 @@ MapLegend.propTypes = {
   onToggleLayer: PropTypes.func,
   onSelectLayer: PropTypes.func,
   onChangeParam: PropTypes.func,
+  onChangeWmsStyle: PropTypes.func,
   onChangeLayer: PropTypes.func,
   onChangeInfo: PropTypes.func,
   layers: PropTypes.array,
