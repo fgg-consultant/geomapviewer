@@ -8,6 +8,7 @@ import uniqBy from "lodash/unionBy";
 import { defined } from "@/utils/core";
 import { selectActiveLang, getMapboxLang } from "@/utils/lang";
 import { getActiveArea } from "@/providers/aoi-provider/selectors";
+import { setWmsStyle } from "@/utils/wms-url";
 
 // map state
 const selectMapLoading = (state) => state.map && state.map.loading;
@@ -33,6 +34,7 @@ const selectLayersLoadingStatus = (state) =>
 
 const selectDatasetParams = (state) => state.datasets?.params;
 const selectLayerTimeUrls = (state) => state.datasets?.layerTimeUrls || {};
+const selectLayerWmsStyles = (state) => state.datasets?.layerWmsStyles || {};
 const selectMapPrinting = (state) => state.map && state.map?.settings?.printing;
 const getMainMapSettings = (state) => state.mainMap || {};
 export const getBasemaps = (state) => state.config?.basemaps || {};
@@ -292,6 +294,7 @@ export const getDatasetsWithConfig = createSelector(
         layerFilterParams,
         mapSide,
         settings = {},
+        wmsStyles,
       } = layerConfig || {};
 
       return {
@@ -319,6 +322,8 @@ export const getDatasetsWithConfig = createSelector(
             mapSide,
             color: d.color,
             active: layers && layers.length && layers.includes(l.id),
+            // WMS style picked in the legend
+            ...(wmsStyles?.[l.id] && { wmsStyle: wmsStyles[l.id] }),
             ...(!isEmpty(layerParams) && {
               params: {
                 ...layerParams,
@@ -487,6 +492,38 @@ export const getLayersWithSettingsParams = createSelector(
   }
 );
 
+// Request the WMS layers with the style picked in the legend. A style from a
+// shared link is applied right away, and dropped once the capabilities show
+// that the layer has no such style.
+export const getLayersWithWmsStyle = createSelector(
+  [getLayersWithSettingsParams, selectLayerWmsStyles],
+  (layers, layerWmsStyles) => {
+    if (isEmpty(layers)) return layers;
+
+    return layers.map((l) => {
+      const source = l.layerConfig?.source;
+
+      if (l.layerType !== "wms" || !l.wmsStyle || !source?.tiles) return l;
+
+      const styles = layerWmsStyles[l.id];
+      if (styles && !styles.some((style) => style.name === l.wmsStyle)) {
+        return l;
+      }
+
+      return {
+        ...l,
+        layerConfig: {
+          ...l.layerConfig,
+          source: {
+            ...source,
+            tiles: source.tiles.map((url) => setWmsStyle(url, l.wmsStyle)),
+          },
+        },
+      };
+    });
+  }
+);
+
 // Maplibre protocol rendering the layer types whose source URL changes with the
 // selected time. Both color tiles client-side (raster_cog through
 // setColorFunction, openmeteo with its own color scales), so the render layer
@@ -500,7 +537,7 @@ const TIME_URL_SOURCES = {
 // Rewrite those layers to use a `<protocol>://` raster source for the current
 // selected time.
 export const getLayersWithTimeUrlSource = createSelector(
-  [getLayersWithSettingsParams, selectLayerTimeUrls],
+  [getLayersWithWmsStyle, selectLayerTimeUrls],
   (layers, layerTimeUrls) => {
     if (isEmpty(layers)) return layers;
 
